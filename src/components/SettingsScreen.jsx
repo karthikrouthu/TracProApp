@@ -30,6 +30,7 @@ import { saveSheetConfig } from '../services/storage';
 const SettingsScreen = ({ onManageCategories }) => {
     const {
         isAuthenticated,
+        userEmail,
         sheetConfig,
         theme,
         toggleTheme,
@@ -146,6 +147,20 @@ const SettingsScreen = ({ onManageCategories }) => {
                                 Connected
                             </Typography>
                         </Box>
+
+                        {userEmail && (
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                    Logged in as:
+                                </Typography>
+                                <Chip
+                                    label={userEmail}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                />
+                            </Box>
+                        )}
 
                         {sheetConfig.sheetName && (
                             <Box sx={{ mb: 2 }}>

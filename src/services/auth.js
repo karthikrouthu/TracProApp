@@ -144,3 +144,36 @@ export const ensureTokenSet = () => {
     }
     return !!token;
 };
+
+/**
+ * Get user profile information
+ */
+export const getUserProfile = async () => {
+    try {
+        const token = loadGoogleToken();
+        if (!token) {
+            throw new Error('Not authenticated');
+        }
+
+        // Use Google's userinfo endpoint
+        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to get user profile');
+        }
+
+        const profile = await response.json();
+        return {
+            email: profile.email,
+            name: profile.name,
+            picture: profile.picture,
+        };
+    } catch (error) {
+        console.error('Error getting user profile:', error);
+        throw error;
+    }
+};

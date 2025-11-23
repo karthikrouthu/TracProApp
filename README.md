@@ -6,6 +6,7 @@ A lightweight, mobile-first expense tracking Progressive Web Application (PWA) w
 
 - 📱 **Mobile-First Design** - Optimized for smartphones with responsive layout
 - 💾 **Google Sheets Integration** - All data stored in your personal Google Sheet
+- 🔄 **Multi-Device Sync** - Sign in with Google to sync settings across all devices
 - 🎨 **Modern UI** - Beautiful minimalist design with smooth animations
 - 🌓 **Dark Mode** - Toggle between light and dark themes
 - 📊 **Auto-Organization** - Expenses automatically organized into monthly sheets

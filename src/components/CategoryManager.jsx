@@ -32,7 +32,7 @@ import {
 } from '../services/storage';
 
 const CategoryManager = ({ onClose }) => {
-    const { expenseTypes, paymentTypes, users, setExpenseTypes, setPaymentTypes, setUsers } = useApp();
+    const { expenseTypes, paymentTypes, users, setExpenseTypes, setPaymentTypes, setUsers, saveUserSettings } = useApp();
 
     const [localExpenseTypes, setLocalExpenseTypes] = useState([...expenseTypes]);
     const [localPaymentTypes, setLocalPaymentTypes] = useState([...paymentTypes]);
@@ -96,6 +96,15 @@ const CategoryManager = ({ onClose }) => {
             cacheExpenseTypes(localExpenseTypes);
             cachePaymentTypes(localPaymentTypes);
             cacheUsers(localUsers);
+
+            // Save user-specific settings for multi-device sync
+            try {
+                await saveUserSettings();
+                console.log('User settings synced across devices');
+            } catch (error) {
+                console.error('Error syncing user settings:', error);
+                // Don't fail the whole operation if user sync fails
+            }
 
             setSnackbar({ open: true, message: 'Changes saved successfully!', severity: 'success' });
 

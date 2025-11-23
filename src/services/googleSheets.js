@@ -465,3 +465,109 @@ export const listSheets = async () => {
         return [];
     }
 };
+
+/**
+ * Get user-specific config from sheet
+ * Stores: sheetId, expenseTypes, paymentTypes, users per Google account email
+ */
+export const getUserConfig = async (userEmail) => {
+    try {
+        const { sheetId } = loadSheetConfig();
+        if (!sheetId) {
+            return null;
+        }
+
+        // Ensure config sheet exists
+        await ensureConfigSheetExists();
+
+        // Try to get user-specific config from row 5 onwards
+        // Format: Row 5: [email, sheetId, expenseTypes (JSON), paymentTypes (JSON), users (JSON)]
+        const response = await getSheetsApi().spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: `${CONFIG_SHEET_NAME}!A5:E100`,
+        });
+
+        const values = response.result.values || [];
+
+        // Find the row for this user
+        const userRow = values.find(row => row[0] === userEmail);
+
+        if (userRow) {
+            return {
+                sheetId: userRow[1] || sheetId,
+                expenseTypes: userRow[2] ? JSON.parse(userRow[2]) : DEFAULT_EXPENSE_TYPES,
+                paymentTypes: userRow[3] ? JSON.parse(userRow[3]) : DEFAULT_PAYMENT_TYPES,
+                users: userRow[4] ? JSON.parse(userRow[4]) : DEFAULT_USERS,
+            };
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error getting user config:', error);
+        return null;
+    }
+};
+
+/**
+ * Save user-specific config to sheet
+ */
+export const saveUserConfig = async (userEmail, config) => {
+    try {
+        const { sheetId } = loadSheetConfig();
+        if (!sheetId) {
+            throw new Error('No sheet configured');
+        }
+
+        // Ensure config sheet exists
+        await ensureConfigSheetExists();
+
+        // Get existing user configs
+        const response = await getSheetsApi().spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: `${CONFIG_SHEET_NAME}!A5:E100`,
+        });
+
+        const values = response.result.values || [];
+
+        // Find the row for this user
+        const userRowIndex = values.findIndex(row => row[0] === userEmail);
+
+        const newRow = [
+            userEmail,
+            config.sheetId || sheetId,
+            JSON.stringify(config.expenseTypes || DEFAULT_EXPENSE_TYPES),
+            JSON.stringify(config.paymentTypes || DEFAULT_PAYMENT_TYPES),
+            JSON.stringify(config.users || DEFAULT_USERS),
+        ];
+
+        if (userRowIndex >= 0) {
+            // Update existing row
+            const rowNumber = userRowIndex + 5; // +5 because we start from row 5
+            await getSheetsApi().spreadsheets.values.update({
+                spreadsheetId: sheetId,
+                range: `${CONFIG_SHEET_NAME}!A${rowNumber}:E${rowNumber}`,
+                valueInputOption: 'RAW',
+                resource: {
+                    values: [newRow],
+                },
+            });
+        } else {
+            // Append new row
+            await getSheetsApi().spreadsheets.values.append({
+                spreadsheetId: sheetId,
+                range: `${CONFIG_SHEET_NAME}!A5:E5`,
+                valueInputOption: 'RAW',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: [newRow],
+                },
+            });
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error saving user config:', error);
+        throw error;
+    }
+};
+

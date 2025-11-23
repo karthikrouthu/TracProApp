@@ -38,6 +38,7 @@ export const DEFAULT_USERS = [
 
 export const GOOGLE_SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/userinfo.email',
 ];
 
 export const CONFIG_SHEET_NAME = '_config';

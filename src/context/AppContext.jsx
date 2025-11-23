@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initGoogleAuth, initGapiClient, isAuthenticated as checkAuth } from '../services/auth';
-import { getConfig, getRecentExpenses } from '../services/googleSheets';
+import { initGoogleAuth, initGapiClient, isAuthenticated as checkAuth, getUserProfile } from '../services/auth';
+import { getConfig, getRecentExpenses, getUserConfig, saveUserConfig } from '../services/googleSheets';
 import {
     loadSheetConfig,
     loadLastPaidBy,
@@ -14,6 +14,7 @@ import {
     cacheRecentExpenses,
     loadTheme,
     saveTheme as saveThemeToStorage,
+    saveSheetConfig,
 } from '../services/storage';
 
 const AppContext = createContext();
@@ -29,6 +30,7 @@ export const useApp = () => {
 export const AppProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [userEmail, setUserEmail] = useState(null);
     const [sheetConfig, setSheetConfig] = useState({ sheetId: null, sheetName: null });
     const [expenseTypes, setExpenseTypes] = useState([]);
     const [paymentTypes, setPaymentTypes] = useState([]);
@@ -80,10 +82,53 @@ export const AppProvider = ({ children }) => {
         init();
     }, []);
 
-    // Load configuration from Google Sheets
+    // Load user profile
+    const loadUserProfile = async () => {
+        try {
+            const profile = await getUserProfile();
+            setUserEmail(profile.email);
+            return profile;
+        } catch (error) {
+            console.error('Error loading user profile:', error);
+            return null;
+        }
+    };
+
+    // Load configuration from Google Sheets (user-specific)
     const loadConfig = async () => {
         try {
             setLoading(true);
+
+            // Get user profile first
+            const profile = await loadUserProfile();
+
+            if (profile && profile.email) {
+                // Try to load user-specific config
+                const userConfig = await getUserConfig(profile.email);
+
+                if (userConfig) {
+                    console.log('Loaded user-specific config for:', profile.email);
+
+                    // Update sheet config if user has a different sheet
+                    if (userConfig.sheetId && userConfig.sheetId !== sheetConfig.sheetId) {
+                        saveSheetConfig(userConfig.sheetId, 'User Sheet');
+                        setSheetConfig({ sheetId: userConfig.sheetId, sheetName: 'User Sheet' });
+                    }
+
+                    setExpenseTypes(userConfig.expenseTypes);
+                    setPaymentTypes(userConfig.paymentTypes);
+                    setUsers(userConfig.users);
+
+                    // Cache the data
+                    cacheExpenseTypes(userConfig.expenseTypes);
+                    cachePaymentTypes(userConfig.paymentTypes);
+                    cacheUsers(userConfig.users);
+
+                    return userConfig;
+                }
+            }
+
+            // Fallback to default config
             const config = await getConfig();
 
             setExpenseTypes(config.expenseTypes);
@@ -105,6 +150,31 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    // Save user-specific settings
+    const saveUserSettings = async () => {
+        try {
+            if (!userEmail) {
+                const profile = await loadUserProfile();
+                if (!profile) {
+                    throw new Error('User not authenticated');
+                }
+            }
+
+            await saveUserConfig(userEmail, {
+                sheetId: sheetConfig.sheetId,
+                expenseTypes,
+                paymentTypes,
+                users,
+            });
+
+            console.log('User settings saved for:', userEmail);
+            return true;
+        } catch (error) {
+            console.error('Error saving user settings:', error);
+            throw error;
+        }
+    };
+
     // Load recent expenses
     const loadRecentExpenses = async () => {
         try {
@@ -119,8 +189,14 @@ export const AppProvider = ({ children }) => {
     };
 
     // Update authentication status
-    const updateAuthStatus = (status) => {
+    const updateAuthStatus = async (status) => {
         setIsAuthenticated(status);
+        if (status) {
+            // Load user profile when authenticated
+            await loadUserProfile();
+        } else {
+            setUserEmail(null);
+        }
     };
 
     // Update sheet configuration
@@ -138,6 +214,7 @@ export const AppProvider = ({ children }) => {
     const value = {
         isAuthenticated,
         isInitialized,
+        userEmail,
         sheetConfig,
         expenseTypes,
         paymentTypes,
@@ -155,6 +232,8 @@ export const AppProvider = ({ children }) => {
         setError,
         loadConfig,
         loadRecentExpenses,
+        loadUserProfile,
+        saveUserSettings,
         updateAuthStatus,
         updateSheetConfig,
         toggleTheme,
