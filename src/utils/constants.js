@@ -14,26 +14,36 @@ export const STORAGE_KEYS = {
 };
 
 export const DEFAULT_EXPENSE_TYPES = [
+    'Vegetables and Fruits',
+    'Bills',
+    'Outside Food',
     'Groceries',
-    'Transport',
-    'Bills & Utilities',
-    'Entertainment',
-    'Healthcare',
-    'Education',
     'Shopping',
-    'Food & Dining',
+    'Petrol',
+    'Rent',
+    'Ravali Mom and Dad',
+    'Karthik Mom and Dad',
+    'Meat and Eggs',
+    'Medicines',
+    'Grooming and Beauty',
+    'Misc',
+    'Consultation',
 ];
 
 export const DEFAULT_PAYMENT_TYPES = [
+    'PhonePe',
+    'GPay',
+    'CredPay',
+    'AmazonPay',
+    'CC',
+    'DC',
     'Cash',
-    'UPI',
-    'Credit Card',
-    'Debit Card',
+    'Bank Transfer',
 ];
 
 export const DEFAULT_USERS = [
-    'User 1',
-    'User 2',
+    'Karthik',
+    'Ravali',
 ];
 
 export const GOOGLE_SCOPES = [
